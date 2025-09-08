@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Magic Photo Tools - Ultimate Toolkit</title>
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.3/heic2any.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+    </script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007aff;
+            --primary-color-dark: #0056b3;
+            --secondary-color: #5856d6;
+            --secondary-color-dark: #3b3a9e;
+            --tertiary-color: #34c759;
+            --tertiary-color-dark: #248a3d;
+            --enhancer-color: #ff9500;
+            --enhancer-color-dark: #b36800;
+            --pdf-color: #ff3b30;
+            --pdf-color-dark: #b32922;
+            --cropper-color: #ff2d55;
+            --cropper-color-dark: #b3203b;
+            --img2pdf-color: #af52de;
+            --img2pdf-color-dark: #8A2BE2;
+            --text-extract-color: #5ac8fa;
+            --text-extract-color-dark: #0090d0;
+
+            /* Dark Theme (Default) */
+            --background-color: #000000;
+            --card-color: #1c1c1e;
+            --header-color: rgba(28, 28, 30, 0.85);
+            --text-light: #f5f5f7;
+            --text-secondary: #b0b0b5;
+            --border-color: rgba(255, 255, 255, 0.15);
+            --reset-border-color: #48484a;
+        }
+
+        body.light-theme {
+            /* Light Theme Variables */
+            --background-color: #f0f2f5;
+            --card-color: #ffffff;
+            --header-color: rgba(255, 255, 255, 0.85);
+            --text-light: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --reset-border-color: #d2d2d7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; font-family: 'Roboto', sans-serif; background-color: var(--background-color); color: var(--text-light); transition: background-color 0.3s ease, color 0.3s ease; }
+        .app-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        .app-header { width: 100%; padding: 1rem 1.5rem; background-color: var(--header-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 100; border-bottom: 1px solid var(--border-color); }
+        .app-header h1 { font-size: 1.5rem; font-weight: 600; position: absolute; left: 50%; transform: translateX(-50%); }
+
+        #back-btn { background: none; border: none; color: var(--primary-color); font-size: 1.1rem; cursor: pointer; display: none; visibility: hidden; }
+        #back-btn.visible { display: block; visibility: visible; }
+        
+        .hamburger-menu { width: 30px; height: 24px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; z-index: 201; }
+        .hamburger-menu .bar { width: 100%; height: 3px; background-color: var(--text-light); border-radius: 2px; transition: all 0.3s ease-in-out; }
+        body.nav-open .hamburger-menu .bar:nth-child(1) { transform: translateY(10.5px) rotate(45deg); }
+        body.nav-open .hamburger-menu .bar:nth-child(2) { opacity: 0; }
+        body.nav-open .hamburger-menu .bar:nth-child(3) { transform: translateY(-10.5px) rotate(-45deg); }
+
+        .nav-drawer { position: fixed; top: 0; left: 0; width: 75%; max-width: 320px; height: 100%; background-color: var(--card-color); border-right: 1px solid var(--border-color); z-index: 200; transform: translateX(-100%); transition: transform 0.3s ease-in-out; padding-top: 6rem; overflow-y: auto; display: flex; flex-direction: column; }
+        .nav-drawer a { display: block; color: var(--text-light); text-decoration: none; font-size: 1.2rem; padding: 1.1rem 2rem; border-bottom: 1px solid var(--border-color); }
+        .nav-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 199; opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out; }
+        body.nav-open .nav-drawer { transform: translateX(0); }
+        body.nav-open .nav-overlay { opacity: 1; visibility: visible; }
+
+        .app-content { flex-grow: 1; overflow-y: auto; padding: 1.5rem; }
+        .view { display: none; }
+        .view.active { display: block; }
+        
+        .card { background-color: var(--card-color); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.5rem; transition: background-color 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .upload-area { border: 3px dashed var(--text-secondary); border-radius: 1rem; padding: 3rem 1rem; text-align: center; cursor: pointer; transition: all 0.3s ease; }
+        .upload-area.drag-over { border-color: var(--primary-color); }
+        .upload-area p { font-size: 1.1rem; }
+        input[type="file"] { display: none; }
+        
+        .card h2, .card h3 { font-weight: 600; margin-bottom: 1rem; }
+        .card h2 { font-size: 1.8rem; } .card h3 { font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; }
+        .preview-image { width: 100%; height: auto; max-height: 250px; object-fit: contain; border-radius: 0.5rem; margin-bottom: 1rem; }
+        .image-info { font-size: 1rem; font-weight: 500; }
+        .image-info span { font-weight: 400; color: var(--text-secondary); }
+        
+        .action-button { display: block; width: 100%; padding: 1.2rem; border: none; border-radius: 0.75rem; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; text-decoration: none; text-align: center; transition: all 0.2s ease; }
+        .action-button:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+        .action-button:disabled { background: #555 !important; cursor: not-allowed; transform: none; box-shadow: none; border: none; }
+        
+        .btn-primary { background: linear-gradient(45deg, var(--primary-color), var(--primary-color-dark)); color: #fff; }
+        .btn-secondary { background: linear-gradient(45deg, var(--secondary-color), var(--secondary-color-dark)); color: #fff; }
+        .btn-tertiary { background: linear-gradient(45deg, var(--tertiary-color), var(--tertiary-color-dark)); color: #fff; }
+        .btn-enhancer { background: linear-gradient(45deg, var(--enhancer-color), var(--enhancer-color-dark)); color: #fff; }
+        .btn-pdf { background: linear-gradient(45deg, var(--pdf-color), var(--pdf-color-dark)); color: #fff; }
+        .btn-cropper { background: linear-gradient(45deg, var(--cropper-color), var(--cropper-color-dark)); color: #fff; }
+        .btn-img2pdf { background: linear-gradient(45deg, var(--img2pdf-color), var(--img2pdf-color-dark)); color: #fff; }
+        .btn-text-extract { background: linear-gradient(45deg, var(--text-extract-color), var(--text-extract-color-dark)); color: #fff; }
+        
+        .btn-reset { background-color: transparent; color: var(--text-secondary); border: 2px solid var(--reset-border-color); }
+        .btn-reset:hover { background-color: var(--reset-border-color); color: var(--text-light); border-color: var(--reset-border-color); }
+
+        .format-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .format-btn { background-color: #3a3a3c; border: none; color: var(--text-light); padding: 1rem 0.5rem; border-radius: 0.75rem; cursor: pointer; font-weight: 500; font-size: 1rem; transition: background-color 0.3s ease; }
+        body.light-theme .format-btn { background-color: #e5e5ea; color: var(--text-light); }
+        .format-btn.active { background-color: var(--primary-color); font-weight: 700; color: #fff; }
+        body.light-theme .format-btn.active { color: #fff; }
+
+        /* Dashboard Styles */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; }
+        .dashboard-icon { background-color: var(--card-color); border-radius: 1rem; padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; border: 1px solid var(--border-color); color: var(--text-light); }
+        .dashboard-icon:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
+        .dashboard-icon svg { width: 48px; height: 48px; margin-bottom: 1rem; }
+        .dashboard-icon span { font-size: 1.05rem; font-weight: 600; display: block; }
+        .dashboard-icon .icon-compress { color: var(--primary-color); }
+        .dashboard-icon .icon-crop { color: var(--cropper-color); }
+        .dashboard-icon .icon-pdf { color: var(--pdf-color); }
+        .dashboard-icon .icon-enhance { color: var(--enhancer-color); }
+        .dashboard-icon .icon-convert { color: var(--tertiary-color); }
+        .dashboard-icon .icon-img2pdf { color: var(--img2pdf-color); }
+        .dashboard-icon .icon-text-extract { color: var(--text-extract-color); }
+        
+        /* Theme Switcher */
+        .theme-switcher-container { margin-top: auto; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); }
+        .theme-switcher-container span { font-size: 1.1rem; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #48484a; transition: .4s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
+        
+        /* PDF to Text Specific */
+        #pdf-text-output { width: 100%; height: 250px; background-color: var(--background-color); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; font-family: monospace; }
+        
+        .slider-group { margin-bottom: 1rem; }
+        .slider-group label { display: block; margin-bottom: 0.5rem; }
+        .slider-group input[type="range"] { width: 100%; }
+        
+        /* Offline Overlay */
+        #offline-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            color: #fff;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        #offline-overlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+        #offline-overlay h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        #offline-overlay p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <button id="back-btn">&lt; Back</button>
+            <h1>Magic Photo Tools</h1>
+            <div class="hamburger-menu" id="hamburger-menu">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+        </header>
+
+        <nav class="nav-drawer" id="nav-drawer">
+            <div>
+                <a href="#" class="nav-link" data-view="dashboard-view">Home (All Tools)</a>
+                <a href="#" class="nav-link" data-view="about-view">About Us</a>
+                <a href="#" class="nav-link" data-view="privacy-view">Privacy Policy</a>
+            </div>
+            <div class="theme-switcher-container">
+                <span>Light Theme</span>
+                <label class="theme-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </nav>
+        <div class="nav-overlay" id="nav-overlay"></div>
+
+        <main class="app-content">
+            <div id="dashboard-view" class="view active">
+                <div class="dashboard-grid">
+                    <button class="dashboard-icon" data-view="compressor-view">
+                        <svg class="icon-compress" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5M15 15l5.25 5.25" /></svg>
+                        <span>Image Compressor</span>
+                    </button>
+                    <button class="dashboard-icon" data-view="converter-view">
+                        <svg class="icon-convert" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        <span>Image Converter</span>
+                    </button>
+                    <button class="dashboard-icon" data-view="cropper-view">
+                        <svg class="icon-crop" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M7.5 20.25H6A2.25 2.25 0 013.75 18v-1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5M16.5 20.25H18A2.25 2.25 0 0020.25 18v-1.5M3.75 12h16.5" /></svg>
+                        <span>Image Cropper</span>
+                    </button>
+                    <button class="dashboard-icon" data-view="pdf-compressor-view">
+                        <svg class="icon-pdf" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                        <span>PDF Compressor</span>
+                    </button>
+                     <button class="dashboard-icon" data-view="pdf-to-text-view">
+                        <svg class="icon-text-extract" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                        <span>PDF to Text</span>
+                    </button>
+                    <button class="dashboard-icon" data-view="image-to-pdf-view">
+                        <svg class="icon-img2pdf" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5h.01M12 10.5v.01M12 10.5v-.01M12 10.5h-.01M12 4.5h.01M12 4.5v.01M12 4.5v-.01M12 4.5h-.01M12 19.5h.01M12 19.5v.01M12 19.5v-.01M12 19.5h-.01M5.625 4.5H9.75v15H5.625a2.25 2.25 0 01-2.25-2.25V6.75a2.25 2.25 0 012.25-2.25zm12.75 0h-4.125v15h4.125a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25z" /></svg>
+                        <span>Image to PDF</span>
+                    </button>
+                    <button class="dashboard-icon" data-view="enhancer-view">
+                        <svg class="icon-enhance" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a3.375 3.375 0 00-2.672-2.672L11.25 18l1.938-.648a3.375 3.375 0 002.672-2.672L16.25 13.5l.648 1.938a3.375 3.375 0 002.672 2.672L21.5 18l-1.938.648a3.375 3.375 0 00-2.672 2.672z" /></svg>
+                        <span>Image Enhancer</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="compressor-view" class="view"></div>
+            <div id="converter-view" class="view"></div>
+            <div id="cropper-view" class="view"></div>
+            <div id="pdf-compressor-view" class="view"></div>
+            <div id="pdf-to-text-view" class="view"></div>
+            <div id="image-to-pdf-view" class="view"></div>
+            <div id="enhancer-view" class="view"></div>
+            <div id="about-view" class="view"></div>
+            <div id="privacy-view" class="view"></div>
+        </main>
+        
+        <div id="offline-overlay">
+            <div>
+                <h2>Connection Lost</h2>
+                <p>An internet connection is required to use this app. Please reconnect to continue.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // All JavaScript logic is identical to the previous version, with the new online check added.
+        const { jsPDF } = window.jspdf;
+        const body=document.body,themeToggle=document.getElementById("theme-toggle"),allViews=document.querySelectorAll(".view"),backBtn=document.getElementById("back-btn"),hamburgerMenu=document.getElementById("hamburger-menu"),navOverlay=document.getElementById("nav-overlay"),offlineOverlay=document.getElementById("offline-overlay");let compressorImage=new Image,converterImage=new Image,enhancerImage=new Image,imageToPdfImage=new Image,originalFileName="",currentImageFormat="jpg",loadedPdfBytes=null,cropper=null;
+        function checkOnlineStatus(){navigator.onLine?offlineOverlay.classList.remove("visible"):offlineOverlay.classList.add("visible")}
+        window.addEventListener("online",checkOnlineStatus);window.addEventListener("offline",checkOnlineStatus);checkOnlineStatus();
+        function applyTheme(e){"light"===e?(body.classList.add("light-theme"),themeToggle.checked=!0):"dark"===e&&(body.classList.remove("light-theme"),themeToggle.checked=!1),localStorage.setItem("theme",e)}
+        backBtn.addEventListener("click",()=>showView("dashboard-view"));hamburgerMenu.addEventListener("click",()=>body.classList.toggle("nav-open"));navOverlay.addEventListener("click",()=>body.classList.toggle("nav-open"));document.querySelectorAll(".dashboard-icon").forEach(e=>e.addEventListener("click",()=>showView(e.getAttribute("data-view"))));document.querySelectorAll(".nav-link").forEach(e=>{e.addEventListener("click",t=>{t.preventDefault(),showView(e.getAttribute("data-view"))})});function showView(e){allViews.forEach(e=>e.classList.remove("active")),document.getElementById(e).classList.add("active"),backBtn.classList.toggle("visible","dashboard-view"!==e),body.classList.remove("nav-open")}
+        themeToggle.addEventListener("change",()=>{applyTheme(themeToggle.checked?"light":"dark")});const savedTheme=localStorage.getItem("theme")||(window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");applyTheme(savedTheme);
+        function populateViews(){document.getElementById("compressor-view").innerHTML='<div class="card" id="compressor-upload-card"><div id="upload-area" class="upload-area"><p>Tap to Upload for Compression</p></div><input type="file" id="file-input" accept="image/*"></div><div id="compressor-results-card" style="display:none;"><div class="card"><h3>Original Image</h3><img id="original-image-preview" class="preview-image"><p id="original-size" class="image-info"></p></div><div class="card"><h3>Compress Image</h3><div class="format-selector"><button class="format-btn active" data-format="jpg">JPG</button><button class="format-btn" data-format="webp">WebP</button></div><img id="compressed-image-preview" class="preview-image"><p id="compressed-size" class="image-info"></p><div class="slider-group" style="margin-top: 1.5rem;"><label>Quality</label><input type="range" id="quality-slider" min="0.1" max="1.0" step="0.05" value="0.75"></div></div><div class="card"><h3>Download Options</h3><div class="action-buttons"><a id="download-image-btn" href="#" download class="action-button btn-primary">Download Compressed Image</a><button id="download-pdf-btn" class="action-button btn-secondary">Export Original as PDF</button></div></div><button class="action-button btn-reset" id="compressor-reset-btn">Start Over</button></div>',document.getElementById("converter-view").innerHTML='<div class="card" id="converter-upload-card"><h3>Image Converter</h3><div id="converter-upload-area" class="upload-area"><p>Upload JPG, PNG, WebP, HEIC</p></div><input type="file" id="converter-file-input" accept="image/*,.heic,.heif"></div><div id="converter-results-card" class="card" style="display:none;"><h3>Convert & Download</h3><img id="converter-preview" class="preview-image"><div class="card"><h3>Output Format</h3><div class="format-selector"><button class="format-btn" data-format="jpg">JPG</button><button class="format-btn" data-format="png">PNG</button><button class="format-btn" data-format="webp">WebP</button></div><div class="slider-group" id="converter-quality-slider" style="display:none;"><label>Quality</label><input type="range" id="converter-quality" min="0.1" max="1.0" step="0.05" value="0.9"></div></div><a id="download-converted-btn" href="#" download class="action-button btn-tertiary">Download</a><button id="reset-converter-btn" class="action-button btn-reset" style="margin-top:1rem;">Start Over</button></div>',document.getElementById("cropper-view").innerHTML='<div class="card" id="cropper-upload-card"><h3>Image Cropper</h3><div id="cropper-upload-area" class="upload-area"><p>Tap to select an Image to Crop</p></div><input type="file" id="cropper-file-input" accept="image/*"></div><div id="cropper-results-card" class="card" style="display: none;"><h3>Crop, Zoom & Rotate</h3><div class="cropper-container"><img id="cropper-image" style="display:block;max-width:100%;"></div><div class="cropper-controls" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:.5rem;margin:1rem 0"><button id="aspect-ratio-free">Free</button><button id="aspect-ratio-16-9">16:9</button><button id="aspect-ratio-4-3">4:3</button><button id="aspect-ratio-1-1">1:1</button></div><button id="download-cropped-btn" class="action-button btn-cropper">Crop & Download</button><button id="reset-cropper-btn" class="action-button btn-reset" style="margin-top: 1rem;">Start Over</button></div>',document.getElementById("pdf-compressor-view").innerHTML='<div class="card" id="pdf-compressor-upload-card"><h3>PDF Compressor</h3><div id="pdf-upload-area" class="upload-area"><p>Tap to select a PDF file</p></div><input type="file" id="pdf-file-input" accept="application/pdf"></div><div id="pdf-compressor-results-card" class="card" style="display: none;"><h3>Compression Settings</h3><div class="slider-group"><label>Image Quality</label><input type="range" id="pdf-quality-slider" min="0.1" max="1.0" step="0.1" value="0.7"></div><div class="image-info" id="original-pdf-size"></div><div class="image-info" id="compressed-pdf-size" style="margin-top:0.5rem;"></div><div class="image-info" id="pdf-status-message" style="margin-top:1.5rem;"></div><div style="background-color:rgba(255,59,48,0.15);border-left:4px solid var(--pdf-color);padding:1rem;border-radius:8px;margin-top:1.5rem;font-size:0.9rem;"><strong>Note:</strong> This process converts pages into images. Text will no longer be selectable.</div><button id="process-pdf-btn" class="action-button btn-pdf" style="margin-top: 1.5rem;">Compress PDF</button><button id="reset-pdf-compressor-btn" class="action-button btn-reset" style="margin-top: 1rem;">Start Over</button></div>',document.getElementById("pdf-to-text-view").innerHTML='<div class="card" id="pdf-to-text-upload-card"><h3>PDF to Text Extractor</h3><div id="pdf-to-text-upload-area" class="upload-area"><p>Tap to select a PDF</p></div><input type="file" id="pdf-to-text-file-input" accept="application/pdf"></div><div id="pdf-to-text-results-card" class="card" style="display:none;"><h3>Extracted Text</h3><p class="image-info" style="margin-bottom:1rem;">Formatting is removed. You can now copy the text.</p><textarea id="pdf-text-output" readonly></textarea><button id="copy-text-btn" class="action-button btn-text-extract" style="margin-top:1.5rem;">Copy to Clipboard</button><button id="reset-pdf-to-text-btn" class="action-button btn-reset" style="margin-top:1rem;">Start Over</button></div>',document.getElementById("image-to-pdf-view").innerHTML='<div class="card" id="image-to-pdf-upload-card"><h3>Image to PDF Converter</h3><div id="image-to-pdf-upload-area" class="upload-area"><p>Tap to select an Image</p></div><input type="file" id="image-to-pdf-file-input" accept="image/*"></div><div id="image-to-pdf-results-card" class="card" style="display:none;"><h3>PDF Preview</h3><img id="image-to-pdf-preview" class="preview-image"><button id="download-single-pdf-btn" class="action-button btn-img2pdf">Download PDF</button><button id="reset-image-to-pdf-btn" class="action-button btn-reset" style="margin-top:1rem;">Start Over</button></div>',document.getElementById("enhancer-view").innerHTML='<div class="card" id="enhancer-upload-card"><h3>Image Enhancer</h3><div id="enhancer-upload-area" class="upload-area"><p>Tap to select an Image to Enhance</p></div><input type="file" id="enhancer-file-input" accept="image/*"></div><div id="enhancer-results-card" class="card" style="display: none;"><h3>Controls</h3><div class="slider-group"><label>Brightness</label><input type="range" id="brightness-slider" min="0" max="200" value="100"></div><div class="slider-group"><label>Contrast</label><input type="range" id="contrast-slider" min="0" max="200" value="100"></div><div class="slider-group"><label>Saturation</label><input type="range" id="saturation-slider" min="0" max="200" value="100"></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;"><div><h4>Before</h4><img id="enhancer-before-preview" class="preview-image"></div><div><h4>After</h4><img id="enhancer-after-preview" class="preview-image"></div></div><a id="download-enhanced-btn" href="#" download class="action-button btn-enhancer" style="margin-top: 1.5rem;">Download Image</a><button id="reset-enhancer-btn" class="action-button btn-reset" style="margin-top: 1rem;">Start Over</button></div>',document.getElementById("about-view").innerHTML='<div class="card static-content-card"><h2>About Magic Photo Tools</h2><p>Welcome to Magic Photo Tools, your all-in-one solution for fast, private, and powerful media editing. Our mission is to make high-quality photo and document utilities accessible to everyone, right from the convenience of your web browser.</p><p><strong>Our Core Philosophy: Privacy First</strong></p><p>In a world where data privacy is more important than ever, we built Magic Photo Tools on a simple principle: <strong>your files are your own</strong>. Every tool in this app—from the image compressor to the PDF converter—runs entirely on your device. No files are ever uploaded, stored, or analyzed on a server. All the "magic" happens locally on your computer, guaranteeing that your photos and documents remain completely private and secure.</p><p><strong>A Suite of Powerful Tools at Your Fingertips</strong></p><ul><li>Compress Images: Drastically reduce the file size of JPGs and WebPs with adjustable quality.</li><li>Convert Formats: Convert between popular formats like JPG, PNG, WebP, and even HEIC files from your iPhone.</li><li>Crop & Resize: Perfectly frame your photos with our interactive, easy-to-use cropper.</li><li>Enhance Photos: Instantly improve your images by adjusting brightness, contrast, and saturation.</li><li>Manage PDFs: Compress large PDFs, convert images to PDF, or extract text from a PDF in seconds.</li></ul></div>',document.getElementById("privacy-view").innerHTML='<div class="card static-content-card"><h2>Privacy Policy</h2><p><strong>Effective Date: September 7, 2025</strong></p><p>Your privacy is the foundation upon which Magic Photo Tools was built. Our policy is simple and transparent: we do not collect your data. Period.</p><p><strong>1. No Data Collection or Storage</strong></p><p>Magic Photo Tools is a client-side application, which means it runs entirely within your local web browser. We do <strong>not</strong> collect, record, store, or transmit any personal information or any files that you upload and process.</p><p><strong>2. Local File Processing</strong></p><p>Every operation you perform—be it compressing an image, converting a format, or extracting text from a PDF—is handled exclusively on your own computer. Your files <strong>never leave your device</strong> and are never sent over the internet to any server. This architecture ensures the highest level of privacy and security for your documents and photos.</p><p><strong>3. Use of Third-Party Libraries</strong></p><p>To provide its functionality, this app uses several standard, reputable open-source libraries which are loaded from Content Delivery Networks (CDNs). These libraries include jsPDF, PDF.js, Cropper.js, and heic2any. These libraries are loaded into your browser to perform their tasks locally. Your files are not shared with these third-party services.</p><p><strong>4. Local Storage for User Preferences</strong></p><p>The only data this application saves in your browser\'s local storage is your preference for the "Light" or "Dark" theme. This is done to improve your user experience on return visits. This information is not personal data, is not transmitted anywhere, and can be cleared at any time by clearing your browser\'s cache and site data.</p></div>'}
+        populateViews();document.getElementById("upload-area").addEventListener("click",()=>document.getElementById("file-input").click());document.getElementById("file-input").addEventListener("change",e=>handleCompressorFile(e.target.files[0]));document.getElementById("converter-upload-area").addEventListener("click",()=>document.getElementById("converter-file-input").click());document.getElementById("converter-file-input").addEventListener("change",e=>handleConverterFile(e.target.files[0]));document.getElementById("cropper-upload-area").addEventListener("click",()=>document.getElementById("cropper-file-input").click());document.getElementById("cropper-file-input").addEventListener("change",e=>handleCropperFile(e.target.files[0]));document.getElementById("pdf-upload-area").addEventListener("click",()=>document.getElementById("pdf-file-input").click());document.getElementById("pdf-file-input").addEventListener("change",e=>handlePdfFile(e.target.files[0]));document.getElementById("pdf-to-text-upload-area").addEventListener("click",()=>document.getElementById("pdf-to-text-file-input").click());document.getElementById("pdf-to-text-file-input").addEventListener("change",e=>handlePdfToTextFile(e.target.files[0]));document.getElementById("image-to-pdf-upload-area").addEventListener("click",()=>document.getElementById("image-to-pdf-file-input").click());document.getElementById("image-to-pdf-file-input").addEventListener("change",e=>handleImageToPdfFile(e.target.files[0]));document.getElementById("enhancer-upload-area").addEventListener("click",()=>document.getElementById("enhancer-file-input").click());document.getElementById("enhancer-file-input").addEventListener("change",e=>handleEnhancerFile(e.target.files[0]));
+        function handleCompressorFile(e){if(!e||!e.type.startsWith("image/"))return;originalFileName=e.name.split(".").slice(0,-1).join(".");const t=new FileReader;t.onload=o=>{compressorImage.onload=()=>{document.getElementById("compressor-upload-card").style.display="none",document.getElementById("compressor-results-card").style.display="block",document.getElementById("original-image-preview").src=o.target.result,document.getElementById("original-size").innerHTML=`Size: <span>${formatBytes(e.size)}</span>`,setupCompressorEventListeners(),compressImage()},compressorImage.src=o.target.result},t.readAsDataURL(e)}
+        function setupCompressorEventListeners(){document.getElementById("quality-slider").addEventListener("input",compressImage),document.querySelectorAll("#compressor-results-card .format-btn").forEach(e=>e.addEventListener("click",t=>{currentImageFormat=t.target.dataset.format,document.querySelectorAll("#compressor-results-card .format-btn").forEach(e=>e.classList.remove("active")),t.target.classList.add("active"),compressImage()})),document.getElementById("download-pdf-btn").addEventListener("click",()=>createAndDownloadPdf({image:compressorImage,filename:originalFileName})),document.getElementById("compressor-reset-btn").addEventListener("click",()=>{showView("dashboard-view"),document.getElementById("compressor-upload-card").style.display="block",document.getElementById("compressor-results-card").style.display="none"})}
+        function compressImage(){if(!compressorImage.src)return;const e=parseFloat(document.getElementById("quality-slider").value),t=document.createElement("canvas");t.width=compressorImage.naturalWidth,t.height=compressorImage.naturalHeight,t.getContext("2d").drawImage(compressorImage,0,0);const o="webp"===currentImageFormat?"image/webp":"image/jpeg",n=t.toDataURL(o,e);document.getElementById("compressed-image-preview").src=n;const i=document.getElementById("download-image-btn");i.href=n,i.download=`${originalFileName}-compressed.${currentImageFormat}`,document.getElementById("compressed-size").innerHTML=`Compressed Size: <span>${formatBytes(dataURLToBytes(n))}</span>`}
+        function createAndDownloadPdf(e){const t=e.image;if(!t.src)return;const o=new jsPDF({unit:"pt",format:"a4"}),n=40,i=515.28,d=761.89,l=t.naturalWidth/t.naturalHeight;let c=i,r=c/l;r>d&&(r=d,c=r*l);const a=n+(i-c)/2,s=n+(d-r)/2;o.addImage(t.src,"PNG",a,s,c,r),o.save(`${e.filename}.pdf`)}
+        function handleConverterFile(e){if(!e)return;const t=e.name.split(".").pop().toLowerCase();originalFileName=e.name.split(".").slice(0,-1).join(".");const o=document.getElementById("converter-upload-card"),n=document.getElementById("converter-results-card"),i=document.getElementById("converter-preview");if("heic"===t||"heif"===t)heic2any({blob:e,toType:"image/png"}).then(e=>{const t=URL.createObjectURL(e);converterImage.onload=()=>{i.src=t,d()},converterImage.src=t}).catch(e=>{alert("Error converting HEIC file."),console.error(e)});else{const t=new FileReader;t.onload=e=>{converterImage.onload=()=>{i.src=e.target.result,d()},converterImage.src=e.target.result},t.readAsDataURL(e)}function d(){o.style.display="none",n.style.display="block",document.querySelectorAll("#converter-results-card .format-btn")[0].click()}}
+        document.querySelectorAll("#converter-results-card .format-btn").forEach(e=>e.addEventListener("click",convertImage)),document.getElementById("reset-converter-btn").addEventListener("click",()=>{document.getElementById("converter-file-input").value="",document.getElementById("converter-upload-card").style.display="block",document.getElementById("converter-results-card").style.display="none",showView("dashboard-view")});function convertImage(e){let t="jpg";e&&e.target&&(document.querySelectorAll("#converter-results-card .format-btn").forEach(e=>e.classList.remove("active")),e.target.classList.add("active"),t=e.target.dataset.format);const o=document.getElementById("converter-quality-slider");o.style.display="jpg"===t?"block":"none";const n=document.createElement("canvas");n.width=converterImage.naturalWidth,n.height=converterImage.naturalHeight,n.getContext("2d").drawImage(converterImage,0,0);const i=document.getElementById("converter-quality").value;let d="image/jpeg",l=t;switch(t){case"png":d="image/png";break;case"webp":d="image/webp"}const c=n.toDataURL(d,"jpg"===t?i:1),r=document.getElementById("download-converted-btn");r.href=c,r.download=`${originalFileName}.${l}`}
+        function handleCropperFile(e){if(!e||!e.type.startsWith("image/"))return;originalFileName=e.name.split(".").slice(0,-1).join(".");const t=new FileReader;t.onload=o=>{document.getElementById("cropper-upload-card").style.display="none",document.getElementById("cropper-results-card").style.display="block";const n=document.getElementById("cropper-image");n.src=o.target.result,cropper&&cropper.destroy(),cropper=new Cropper(n,{viewMode:1,dragMode:"move",autoCropArea:.8,background:!1,responsive:!0})},t.readAsDataURL(e)}
+        document.getElementById("aspect-ratio-free").addEventListener("click",()=>cropper.setAspectRatio(NaN)),document.getElementById("aspect-ratio-16-9").addEventListener("click",()=>cropper.setAspectRatio(16/9)),document.getElementById("aspect-ratio-4-3").addEventListener("click",()=>cropper.setAspectRatio(4/3)),document.getElementById("aspect-ratio-1-1").addEventListener("click",()=>cropper.setAspectRatio(1/1)),document.getElementById("download-cropped-btn").addEventListener("click",()=>{if(!cropper)return;cropper.getCroppedCanvas({maxWidth:4096,maxHeight:4096,imageSmoothingQuality:"high"}).toBlob(e=>{const t=URL.createObjectURL(e),o=document.createElement("a");o.href=t,o.download=`${originalFileName}-cropped.png`,o.click(),URL.revokeObjectURL(t)})}),document.getElementById("reset-cropper-btn").addEventListener("click",()=>{cropper&&cropper.destroy(),cropper=null,document.getElementById("cropper-file-input").value="",document.getElementById("cropper-upload-card").style.display="block",document.getElementById("cropper-results-card").style.display="none",showView("dashboard-view")});
+        function handlePdfFile(e){if(!e||"application/pdf"!==e.type)return;originalFileName=e.name.split(".").slice(0,-1).join(".");const t=new FileReader;t.onload=o=>{loadedPdfBytes=o.target.result,document.getElementById("pdf-compressor-upload-card").style.display="none",document.getElementById("pdf-compressor-results-card").style.display="block",document.getElementById("original-pdf-size").innerHTML=`Original Size: <span>${formatBytes(e.size)}</span>`,document.getElementById("compressed-pdf-size").innerHTML=""},t.readAsDataURL(e)}
+        document.getElementById("process-pdf-btn").addEventListener("click",compressPdf),document.getElementById("reset-pdf-compressor-btn").addEventListener("click",()=>{loadedPdfBytes=null,document.getElementById("pdf-file-input").value="",document.getElementById("pdf-compressor-upload-card").style.display="block",document.getElementById("pdf-compressor-results-card").style.display="none",showView("dashboard-view")});async function compressPdf(){if(!loadedPdfBytes)return;const e=document.getElementById("process-pdf-btn");e.disabled=!0,e.textContent="Processing...";const t=document.getElementById("pdf-status-message");t.textContent="Preparing...";const o=parseFloat(document.getElementById("pdf-quality-slider").value),n=atob(loadedPdfBytes.split(",")[1]),i=new Uint8Array(n.length);for(let e=0;e<n.length;e++)i[e]=n.charCodeAt(e);const d=await pdfjsLib.getDocument({data:i}).promise,l=new jsPDF,c=d.numPages;for(let e=1;e<=c;e++){t.textContent=`Processing page ${e} of ${c}...`;const o=await d.getPage(e),n=o.getViewport({scale:1.5}),i=document.createElement("canvas"),r=i.getContext("2d");i.height=n.height,i.width=n.width,await o.render({canvasContext:r,viewport:n}).promise;const a=i.toDataURL("image/jpeg",.7);e>1&&l.addPage(),l.addImage(a,"JPEG",0,0,l.internal.pageSize.getWidth(),l.internal.pageSize.getHeight())}t.textContent="Finalizing...";const r=l.output("blob"),a=URL.createObjectURL(r),s=document.createElement("a");s.href=a,s.download=`${originalFileName}-compressed.pdf`,s.click(),URL.revokeObjectURL(a),document.getElementById("compressed-pdf-size").innerHTML=`Compressed Size: <span>${formatBytes(r.size)}</span>`,t.textContent="Complete!",e.disabled=!1,e.textContent="Compress PDF"}
+        async function handlePdfToTextFile(e){if(!e)return;document.getElementById("pdf-to-text-upload-card").style.display="none",document.getElementById("pdf-to-text-results-card").style.display="block";const t=document.getElementById("copy-text-btn");t.textContent="Copy to Clipboard";const o=new FileReader;o.onload=async t=>{const o=await pdfjsLib.getDocument({data:atob(t.target.result.split(",")[1])}).promise;let n="";for(let e=1;e<=o.numPages;e++){const t=await o.getPage(e),i=await t.getTextContent();n+=i.items.map(e=>e.str).join(" ")+"\n\n"}document.getElementById("pdf-text-output").value=n},o.readAsDataURL(e)}
+        document.getElementById("copy-text-btn").addEventListener("click",e=>{navigator.clipboard.writeText(document.getElementById("pdf-text-output").value),e.target.textContent="Copied!"}),document.getElementById("reset-pdf-to-text-btn").addEventListener("click",()=>{document.getElementById("pdf-to-text-file-input").value="",document.getElementById("pdf-to-text-upload-card").style.display="block",document.getElementById("pdf-to-text-results-card").style.display="none",showView("dashboard-view")});
+        function handleImageToPdfFile(e){if(!e||!e.type.startsWith("image/"))return;originalFileName=e.name.split(".").slice(0,-1).join(".");const t=new FileReader;t.onload=o=>{imageToPdfImage.onload=()=>{document.getElementById("image-to-pdf-upload-card").style.display="none",document.getElementById("image-to-pdf-results-card").style.display="block",document.getElementById("image-to-pdf-preview").src=o.target.result},imageToPdfImage.src=o.target.result},t.readAsDataURL(e)}
+        document.getElementById("download-single-pdf-btn").addEventListener("click",()=>createAndDownloadPdf({image:imageToPdfImage,filename:originalFileName})),document.getElementById("reset-image-to-pdf-btn").addEventListener("click",()=>{document.getElementById("image-to-pdf-file-input").value="",document.getElementById("image-to-pdf-upload-card").style.display="block",document.getElementById("image-to-pdf-results-card").style.display="none",showView("dashboard-view")});
+        function handleEnhancerFile(e){if(!e||!e.type.startsWith("image/"))return;const t=new FileReader;t.onload=o=>{enhancerImage.onload=()=>{document.getElementById("enhancer-upload-card").style.display="none",document.getElementById("enhancer-results-card").style.display="block",document.getElementById("enhancer-before-preview").src=o.target.result,applyEnhancements(e.name)},enhancerImage.src=o.target.result},t.readAsDataURL(e)}
+        function applyEnhancements(e){const t=document.createElement("canvas");t.width=enhancerImage.naturalWidth,t.height=enhancerImage.naturalHeight;const o=t.getContext("2d"),n=document.getElementById("brightness-slider").value,i=document.getElementById("contrast-slider").value,d=document.getElementById("saturation-slider").value;o.filter=`brightness(${n}%) contrast(${i}%) saturate(${d}%)`,o.drawImage(enhancerImage,0,0);const l=t.toDataURL("image/png"),c=document.getElementById("download-enhanced-btn");c.href=l,c.download=`${e.split(".").slice(0,-1).join(".")}-enhanced.png`,document.getElementById("enhancer-after-preview").src=l}
+        ["brightness-slider","contrast-slider","saturation-slider"].forEach(e=>document.getElementById(e).addEventListener("input",()=>applyEnhancements("temp"))),document.getElementById("reset-enhancer-btn").addEventListener("click",()=>{document.getElementById("enhancer-file-input").value="",document.getElementById("enhancer-upload-card").style.display="block",document.getElementById("enhancer-results-card").style.display="none",["brightness-slider","contrast-slider","saturation-slider"].forEach(e=>document.getElementById(e).value=100),showView("dashboard-view")});
+        function formatBytes(e,t=2){if(0===e)return"0 Bytes";const o=1024,n=Math.floor(Math.log(e)/Math.log(o));return parseFloat((e/Math.pow(o,n)).toFixed(t))+" "+["B","KB","MB","GB"][n]}
+        function dataURLToBytes(e){return 3*e.length/4}
+    </script>
+</body>
+</html>
